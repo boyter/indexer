@@ -57,8 +57,12 @@ func main() {
 		fmt.Println("")
 		for _, r := range res {
 			fmt.Println(idToFile[r])
-			for _, l := range findMatchingLines(idToFile[r], searchTerm, 5) {
+			matching := findMatchingLines(idToFile[r], searchTerm, 5)
+			for _, l := range matching {
 				fmt.Println(l)
+			}
+			if len(matching) == 0 {
+				fmt.Println("false positive match")
 			}
 			fmt.Println("")
 		}
