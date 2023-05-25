@@ -250,3 +250,16 @@ func Ngrams(text string, size int) []string {
 
 	return ngrams
 }
+
+// GetFill returns the % value of how much this doc was filled, allowing for
+// determining if the index will be overfilled for this document
+func GetFill(doc []bool) float64 {
+	count := 0
+	for _, i := range doc {
+		if i {
+			count++
+		}
+	}
+
+	return float64(count) / float64(BloomSize) * 100
+}
