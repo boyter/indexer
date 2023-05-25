@@ -233,3 +233,20 @@ func PrintIndex() {
 		fmt.Printf("%064b\n", i)
 	}
 }
+
+// Ngrams given input splits it according the requested size
+// such that you can get trigrams or whatever else is required
+func Ngrams(text string, size int) []string {
+	var runes = []rune(text)
+
+	var ngrams []string
+
+	for i := 0; i < len(runes); i++ {
+		if i+size < len(runes)+1 {
+			ngram := runes[i : i+size]
+			ngrams = append(ngrams, string(ngram))
+		}
+	}
+
+	return ngrams
+}
