@@ -191,7 +191,7 @@ func Add(item []bool) error {
 		return errors.New(fmt.Sprintf("expected to match size %d", BloomSize))
 	}
 
-	// we need to know if we need to add another 2048 to this index...
+	// we need to know if we need to add another batch to this index...
 	// which should only be called if we are building from the start
 	// or if we need to reset
 	if currentBlockDocumentCount == 0 || currentBlockDocumentCount == DocumentsPerBlock {
