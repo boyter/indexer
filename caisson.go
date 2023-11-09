@@ -8,6 +8,7 @@ import (
 	"hash/fnv"
 	"sort"
 	"strings"
+	"unicode/utf8"
 )
 
 var currentBlockDocumentCount = 0
@@ -96,25 +97,28 @@ func Itemise(tokens []string) []bool {
 // Trigrams takes in text and returns its trigrams
 // Attempts to be as efficient as possible
 func Trigrams(text string) []string {
-	var runes = []rune(text)
-
-	// if we have less than or 2 runes we cannot do anything so bail out
-	if len(runes) <= 2 {
-		return []string{}
-	}
-
-	// we always need this many ngrams, so preallocate to avoid expanding the slice
-	// which is the most expensive thing in here according to profiles
-	ngrams := make([]string, len(runes)-2)
-
-	for i := 0; i < len(runes); i++ {
-		if i+3 < len(runes)+1 {
-			ngram := runes[i : i+3]
-			ngrams[i] = string(ngram)
+	var offsets [3]int
+	for i := 0; i < 2; i++ {
+		if len(text) <= offsets[i] {
+			return nil
 		}
+		r, sz := utf8.DecodeRuneInString(text[offsets[i]:])
+		if r == utf8.RuneError {
+			return nil
+		}
+		offsets[i+1] = offsets[i] + sz
 	}
-
-	return ngrams
+	out := make([]string, 0, len(text))
+	for offsets[2] < len(text) {
+		r, sz := utf8.DecodeRuneInString(text)
+		if r == utf8.RuneError {
+			return nil
+		}
+		out = append(out, text[offsets[0]:offsets[2]+sz])
+		copy(offsets[:2], offsets[1:])
+		offsets[2] += sz
+	}
+	return out
 }
 
 // Queryise given some content will turn it into tokens
