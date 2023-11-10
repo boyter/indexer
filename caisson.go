@@ -8,6 +8,7 @@ import (
 	"hash/fnv"
 	"sort"
 	"strings"
+	"unicode/utf8"
 )
 
 var (
@@ -112,9 +113,25 @@ func Trigrams(text string) []string {
 // trigrams takes in text and inserts its trigrams to the result slice starting at location.
 // Attempts to be as efficient as possible
 func trigrams(text string, result []string, location int) int {
-	runes := []rune(text)
-	for i := 0; i < len(runes)-2; i++ {
-		result[i+location] = string(runes[i : i+3])
+	l := len(text)
+	if l < 3 {
+		return 0
+	}
+
+	// set up vars to track locations in the text as we walk
+	st, mid, end, tmp := 0, 0, 0, 0
+
+	// mid = index of second rune
+	// end = index of third rune
+	_, mid = utf8.DecodeRuneInString(text)
+	_, tmp = utf8.DecodeRuneInString(text[mid:])
+	end = mid + tmp
+	for end < l {
+		result[location] = text[st : end+1]
+		_, tmp = utf8.DecodeRuneInString(text[end:])
+		// update start, mid, end = old+mid, old_end, new_end=old_end+tmp
+		st, mid, end = mid, end, end+tmp
+		location++
 	}
 	return len(text) - 2
 }

@@ -21,7 +21,7 @@ func TestTrigrams(t *testing.T) {
 		t.Run(testCase.text, func(t *testing.T) {
 			result := Trigrams(testCase.text)
 			if !reflect.DeepEqual(result, testCase.expected) {
-				t.Errorf("Trigrams(%v)=%v, got %v", testCase.text, result, testCase.expected)
+				t.Errorf("Trigrams(%v)=%v, expected %v", testCase.text, result, testCase.expected)
 			}
 		})
 	}
@@ -49,7 +49,7 @@ func TestTokenize(t *testing.T) {
 		t.Run(testCase.text, func(t *testing.T) {
 			result := Tokenize(testCase.text)
 			if !reflect.DeepEqual(result, testCase.expected) {
-				t.Errorf("Tokenize(%v)=%v, got %v", testCase.text, result, testCase.expected)
+				t.Errorf("Tokenize(%v)=%v, expected %v", testCase.text, result, testCase.expected)
 			}
 		})
 	}
