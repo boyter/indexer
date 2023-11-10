@@ -43,6 +43,7 @@ func TestTokenize(t *testing.T) {
 		{"abcd efg", []string{"abc", "bcd", "efg"}},
 		{"abc abc", []string{"abc", "abc"}},
 		{"abc de", []string{"abc"}},
+		{"abc de fghi", []string{"abc", "fgh", "ghi"}},
 	} {
 		testCase := testCase
 		t.Run(testCase.text, func(t *testing.T) {
