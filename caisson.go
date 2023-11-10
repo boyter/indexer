@@ -61,7 +61,7 @@ func Search(queryBits []uint64) []uint32 {
 }
 
 // Tokenize returns a slice of tokens for the given text.
-func Tokenize(text string) []string {
+func Tokenize(text string) []Trigram {
 	res := strings.Fields(strings.ToLower(text))
 	var cres []string
 	for _, v := range res {
@@ -71,7 +71,7 @@ func Tokenize(text string) []string {
 	}
 
 	// now we have clean tokens trigram them
-	var trigrams []string
+	var trigrams []Trigram
 	for _, r := range cres {
 		trigrams = append(trigrams, Trigrams(r)...)
 	}
@@ -82,36 +82,41 @@ func Tokenize(text string) []string {
 // Itemise given some content will turn it into tokens
 // and then use those to create the bit positions we need to
 // set for our bloomFilter filter index
-func Itemise(tokens []string) []bool {
+func Itemise(tokens []Trigram) []bool {
 	docBool := make([]bool, BloomSize)
 
 	for _, token := range tokens {
-		for _, i := range HashBloom([]byte(token)) {
+		for _, i := range HashBloom(token.Bytes()) {
 			docBool[i] = true
 		}
 	}
 	return docBool
 }
 
-// Trigrams takes in text and returns its trigrams
-// Attempts to be as efficient as possible
-func Trigrams(text string) []string {
-	var runes = []rune(text)
+type Trigram [3]rune
+
+// Bytes is the simplest way to turn an array of runes into a slice of bytes.
+// There is a faster way to do this, but not needed for this demo.
+// See: https://stackoverflow.com/questions/29255746/how-encode-rune-into-byte-using-utf8
+func (t Trigram) Bytes() []byte {
+	return []byte(string(t[:]))
+}
+
+// Trigrams takes in text and returns its trigrams.
+func Trigrams(text string) []Trigram {
+	runes := []rune(text)
 
 	// if we have less than or 2 runes we cannot do anything so bail out
-	if len(runes) <= 2 {
-		return []string{}
+	if len(runes) < 3 {
+		return []Trigram{}
 	}
 
-	// we always need this many ngrams, so preallocate to avoid expanding the slice
-	// which is the most expensive thing in here according to profiles
-	ngrams := make([]string, len(runes)-2)
+	// allocate all trigrams
+	ngrams := make([]Trigram, len(runes)-2)
 
-	for i := 0; i < len(runes); i++ {
-		if i+3 < len(runes)+1 {
-			ngram := runes[i : i+3]
-			ngrams[i] = string(ngram)
-		}
+	// create the trigrams
+	for i := 0; i < len(runes)-2; i++ {
+		ngrams[i] = Trigram(runes[i : i+3])
 	}
 
 	return ngrams
@@ -123,7 +128,7 @@ func Trigrams(text string) []string {
 func Queryise(query string) []uint64 {
 	var queryBits []uint64
 	for _, w := range Tokenize(query) {
-		queryBits = append(queryBits, HashBloom([]byte(w))...)
+		queryBits = append(queryBits, HashBloom(w.Bytes())...)
 	}
 
 	// removing duplicates and sorting should in theory improve RAM access
