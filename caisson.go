@@ -10,10 +10,12 @@ import (
 	"strings"
 )
 
-var currentBlockDocumentCount = 0
-var bloomFilter []uint64
-var currentDocumentCount = 0
-var currentBlockStartDocumentCount = 0
+var (
+	currentBlockDocumentCount      = 0
+	bloomFilter                    []uint64
+	currentDocumentCount           = 0
+	currentBlockStartDocumentCount = 0
+)
 
 // Search the results we need to look at very quickly using only bit operations
 // mostly limited by memory access
@@ -62,21 +64,25 @@ func Search(queryBits []uint64) []uint32 {
 
 // Tokenize returns a slice of tokens for the given text.
 func Tokenize(text string) []string {
+	// First loop prepares the input and computes the slice size required for the final result
 	res := strings.Fields(strings.ToLower(text))
-	var cres []string
-	for _, v := range res {
-		if len(v) >= 3 {
-			cres = append(cres, v)
+	cres := make([]string, 0, len(res))
+	finalLength := 0
+	for _, field := range res {
+		// ignore words that cannot be trigrammed
+		if len(field) > 2 {
+			cres = append(cres, field)
+			finalLength += len(field) - 2
 		}
 	}
 
-	// now we have clean tokens trigram them
-	var trigrams []string
-	for _, r := range cres {
-		trigrams = append(trigrams, Trigrams(r)...)
+	// allocate and computes the final trigram slice
+	result := make([]string, finalLength)
+	current := 0
+	for _, field := range cres {
+		current += trigrams(field, result, current)
 	}
-
-	return trigrams
+	return result
 }
 
 // Itemise given some content will turn it into tokens
@@ -94,27 +100,23 @@ func Itemise(tokens []string) []bool {
 }
 
 // Trigrams takes in text and returns its trigrams
-// Attempts to be as efficient as possible
 func Trigrams(text string) []string {
-	var runes = []rune(text)
-
-	// if we have less than or 2 runes we cannot do anything so bail out
-	if len(runes) <= 2 {
+	if len(text) < 3 {
 		return []string{}
 	}
+	result := make([]string, len(text)-2)
+	trigrams(text, result, 0)
+	return result
+}
 
-	// we always need this many ngrams, so preallocate to avoid expanding the slice
-	// which is the most expensive thing in here according to profiles
-	ngrams := make([]string, len(runes)-2)
-
-	for i := 0; i < len(runes); i++ {
-		if i+3 < len(runes)+1 {
-			ngram := runes[i : i+3]
-			ngrams[i] = string(ngram)
-		}
+// trigrams takes in text and inserts its trigrams to the result slice starting at location.
+// Attempts to be as efficient as possible
+func trigrams(text string, result []string, location int) int {
+	runes := []rune(text)
+	for i := 0; i < len(runes)-2; i++ {
+		result[i+location] = string(runes[i : i+3])
 	}
-
-	return ngrams
+	return len(text) - 2
 }
 
 // Queryise given some content will turn it into tokens
@@ -142,7 +144,7 @@ func RemoveUInt64Duplicates(s []uint64) []uint64 {
 		return s
 	}
 	sort.Slice(s, func(x, y int) bool { return s[x] > s[y] })
-	var e = 1
+	e := 1
 	for i := 1; i < len(s); i++ {
 		if s[i] == s[i-1] {
 			continue
@@ -237,7 +239,7 @@ func PrintIndex() {
 // Ngrams given input splits it according the requested size
 // such that you can get trigrams or whatever else is required
 func Ngrams(text string, size int) []string {
-	var runes = []rune(text)
+	runes := []rune(text)
 
 	var ngrams []string
 
