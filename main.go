@@ -55,7 +55,10 @@ func main() {
 
 	endTime := time.Now().UnixMilli() - startTime
 	fmt.Printf("currentBlockDocumentCount:%v currentDocumentCount:%v currentBlockStartDocumentCount:%v indexTimeMilli:%v trigramMethod:%v\n", currentBlockDocumentCount, currentDocumentCount, currentBlockStartDocumentCount, endTime, trigramMethod)
-	return
+	if trigramMethod == "" {
+		return
+	}
+
 	var searchTerm string
 	for {
 		fmt.Println("enter search term: ")
