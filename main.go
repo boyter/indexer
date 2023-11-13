@@ -2,16 +2,25 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // keeps track of files stored in the index so we can open them to find matches
 var idToFile []string
 
+var trigramMethod = ""
+
 func main() {
+
+	flag.StringVar(&trigramMethod, "trigram", "", "which trigram method should we use [default,merovius,dancantos,jamesrom]")
+	flag.Parse()
+
+	startTime := time.Now().UnixMilli()
 	// walk the directory getting files and indexing
 	_ = filepath.Walk(".", func(root string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -44,8 +53,9 @@ func main() {
 		return nil
 	})
 
-	fmt.Printf("currentBlockDocumentCount:%v currentDocumentCount:%v currentBlockStartDocumentCount:%v\n", currentBlockDocumentCount, currentDocumentCount, currentBlockStartDocumentCount)
-
+	endTime := time.Now().UnixMilli() - startTime
+	fmt.Printf("currentBlockDocumentCount:%v currentDocumentCount:%v currentBlockStartDocumentCount:%v indexTimeMilli:%v trigramMethod:%v\n", currentBlockDocumentCount, currentDocumentCount, currentBlockStartDocumentCount, endTime, trigramMethod)
+	return
 	var searchTerm string
 	for {
 		fmt.Println("enter search term: ")
