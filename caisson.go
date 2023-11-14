@@ -8,6 +8,7 @@ import (
 	"hash/fnv"
 	"sort"
 	"strings"
+	"unsafe"
 )
 
 var currentBlockDocumentCount = 0
@@ -86,7 +87,7 @@ func Itemise(tokens []Trigram) []bool {
 	docBool := make([]bool, BloomSize)
 
 	for _, token := range tokens {
-		for _, i := range HashBloom(token.Bytes()) {
+		for _, i := range HashBloom(token.BytesFast()) {
 			docBool[i] = true
 		}
 	}
@@ -95,11 +96,19 @@ func Itemise(tokens []Trigram) []bool {
 
 type Trigram [3]rune
 
-// Bytes is the simplest way to turn an array of runes into a slice of bytes.
+// Bytes is the simplest way to turn an array of runes into a slice of bytes
+// that represent a UTF-8 string.
 // There is a faster way to do this, but not needed for this demo.
 // See: https://stackoverflow.com/questions/29255746/how-encode-rune-into-byte-using-utf8
 func (t Trigram) Bytes() []byte {
 	return []byte(string(t[:]))
+}
+
+// BytesFast returns the underlying bytes of the 3 runes. These bytes are
+// suitable for hashing but the slice does not represent a UTF-8 string.
+// Use .Bytes() if you want to encode the Trigram to a UTF-8 string.
+func (t Trigram) BytesFast() []byte {
+	return (*[12]byte)(unsafe.Pointer(&t))[:]
 }
 
 // Trigrams takes in text and returns its trigrams.
@@ -128,7 +137,7 @@ func Trigrams(text string) []Trigram {
 func Queryise(query string) []uint64 {
 	var queryBits []uint64
 	for _, w := range Tokenize(query) {
-		queryBits = append(queryBits, HashBloom(w.Bytes())...)
+		queryBits = append(queryBits, HashBloom(w.BytesFast())...)
 	}
 
 	// removing duplicates and sorting should in theory improve RAM access
