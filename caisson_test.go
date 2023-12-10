@@ -31,3 +31,9 @@ func BenchmarkTrigramsJamesrom(b *testing.B) {
 		TrigramsJamesrom(trigramexample)
 	}
 }
+
+func BenchmarkTrigramsFfmiruz(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		TrigramsFfmiruz(trigramexample)
+	}
+}

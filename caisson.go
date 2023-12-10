@@ -79,6 +79,8 @@ func Tokenize(text string) []string {
 			trigrams = append(trigrams, TrigramsMerovius(r)...)
 		case "dancantos":
 			trigrams = append(trigrams, TrigramsDancantos(r)...)
+		case "ffmiruz":
+			trigrams = append(trigrams, TrigramsFfmiruz(r)...)
 		case "jamesrom":
 			for _, t := range TrigramsJamesrom(r) {
 				trigrams = append(trigrams, string(t.Bytes()))
@@ -218,6 +220,40 @@ func TrigramsJamesrom(text string) []Trigram {
 	}
 
 	return ngrams
+}
+
+func TrigramsFfmiruz(text string) []string {
+	var gram [3]int
+	for i := 0; i < 2; i++ {
+		size := runeSize((text[gram[i]]))
+		gram[i+1] = gram[i] + size
+	}
+
+	list := make([]string, 0, len(text))
+	for gram[2] < len(text) {
+		size := runeSize((text[gram[2]]))
+		list = append(list, text[gram[0]:gram[2]+size])
+		gram[0], gram[1], gram[2] = gram[1], gram[2], gram[2]+size
+	}
+	return list
+}
+
+// runeSize returns rune size given its first byte.
+// Returns 1 if invalid first byte.
+func runeSize(b byte) int {
+	if b < 0xC2 {
+		return 1
+	}
+	if b < 0xE0 {
+		return 2
+	}
+	if b < 0xF0 {
+		return 3
+	}
+	if b < 0xF5 {
+		return 4
+	}
+	return 1
 }
 
 // Queryise given some content will turn it into tokens
