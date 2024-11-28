@@ -17,7 +17,7 @@ var trigramMethod = ""
 
 func main() {
 
-	flag.StringVar(&trigramMethod, "trigram", "", "which trigram method should we use [default,merovius,dancantos,jamesrom,ffmiruz]")
+	flag.StringVar(&trigramMethod, "trigram", "default", "which trigram method should we use [default,merovius,dancantos,jamesrom,ffmiruz]")
 	flag.Parse()
 
 	startTime := time.Now().UnixMilli()
