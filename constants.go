@@ -2,5 +2,5 @@ package main
 
 const (
 	BloomSize         = 4096
-	DocumentsPerBlock = 64
+	DocumentsPerBlock = 32
 )

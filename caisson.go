@@ -12,15 +12,15 @@ import (
 )
 
 var currentBlockDocumentCount = 0
-var bloomFilter []uint64
+var bloomFilter []uint32
 var currentDocumentCount = 0
 var currentBlockStartDocumentCount = 0
 
 // Search the results we need to look at very quickly using only bit operations
 // mostly limited by memory access
-func Search(queryBits []uint64) []uint32 {
+func Search(queryBits []uint32) []uint32 {
 	var results []uint32
-	var res uint64
+	var res uint32
 
 	if len(queryBits) == 0 {
 		return results
@@ -30,12 +30,12 @@ func Search(queryBits []uint64) []uint32 {
 	for i := 0; i < len(bloomFilter); i += BloomSize {
 		// preload the res with the result of the first queryBit and if it's not 0 then we continue
 		// if it is 0 it means nothing can be a match so we don't need to do anything
-		res = bloomFilter[queryBits[0]+uint64(i)]
+		res = bloomFilter[queryBits[0]+uint32(i)]
 
 		// we don't need to look at the first queryBit anymore so start at one
 		// then go through each long looking to see if we keep a match anywhere
 		for j := 1; j < len(queryBits); j++ {
-			res = res & bloomFilter[queryBits[j]+uint64(i)]
+			res = res & bloomFilter[queryBits[j]+uint32(i)]
 
 			// if we have 0 meaning no bits set we should bail out because there is nothing more to do here
 			// as we cannot have a match even if further queryBits have something set
@@ -259,15 +259,15 @@ func runeSize(b byte) int {
 // Queryise given some content will turn it into tokens
 // and then hash them and store the resulting values into
 // a slice which we can use to query the bloom filter
-func Queryise(query string) []uint64 {
-	var queryBits []uint64
+func Queryise(query string) []uint32 {
+	var queryBits []uint32
 	for _, w := range Tokenize(query) {
 		queryBits = append(queryBits, HashBloom([]byte(w))...)
 	}
 
 	// removing duplicates and sorting should in theory improve RAM access
 	// and hence performance
-	queryBits = RemoveUInt64Duplicates(queryBits)
+	queryBits = RemoveUInt32Duplicates(queryBits)
 	sort.Slice(queryBits, func(i, j int) bool {
 		return queryBits[i] < queryBits[j]
 	})
@@ -276,7 +276,7 @@ func Queryise(query string) []uint64 {
 }
 
 // RemoveUInt64Duplicates removes duplicate values from uint64 slice
-func RemoveUInt64Duplicates(s []uint64) []uint64 {
+func RemoveUInt32Duplicates(s []uint32) []uint32 {
 	if len(s) < 2 {
 		return s
 	}
@@ -295,11 +295,11 @@ func RemoveUInt64Duplicates(s []uint64) []uint64 {
 
 // HashBloom hashes a single token/word 3 times to give us the entry
 // locations we need for our bloomFilter filter
-func HashBloom(word []byte) []uint64 {
-	var hashes []uint64
+func HashBloom(word []byte) []uint32 {
+	var hashes []uint32
 
-	h1 := fnv.New64a()
-	h2 := fnv.New64()
+	h1 := fnv.New32a()
+	h2 := fnv.New32()
 
 	// 3 hashes is probably OK for our purposes
 	// but to be really like Bing it should change this
@@ -307,15 +307,15 @@ func HashBloom(word []byte) []uint64 {
 	// rarer terms are hashes more
 
 	_, _ = h1.Write(word)
-	hashes = append(hashes, h1.Sum64()%BloomSize)
+	hashes = append(hashes, h1.Sum32()%BloomSize)
 	h1.Reset()
 
 	_, _ = h2.Write(word)
-	hashes = append(hashes, h2.Sum64()%BloomSize)
+	hashes = append(hashes, h2.Sum32()%BloomSize)
 
 	_, _ = h1.Write(word)
 	_, _ = h1.Write([]byte("salt")) // anything works here
-	hashes = append(hashes, h1.Sum64()%BloomSize)
+	hashes = append(hashes, h1.Sum32()%BloomSize)
 	h1.Reset()
 
 	return hashes
@@ -334,7 +334,7 @@ func Add(item []bool) error {
 	// which should only be called if we are building from the start
 	// or if we need to reset
 	if currentBlockDocumentCount == 0 || currentBlockDocumentCount == DocumentsPerBlock {
-		bloomFilter = append(bloomFilter, make([]uint64, BloomSize)...)
+		bloomFilter = append(bloomFilter, make([]uint32, BloomSize)...)
 		currentBlockDocumentCount = 0
 
 		// We don't want to do this for the first document, but everything after
@@ -369,7 +369,7 @@ func PrintIndex() {
 			fmt.Println("")
 		}
 
-		fmt.Printf("%064b\n", i)
+		fmt.Printf("%032b\n", i)
 	}
 }
 
