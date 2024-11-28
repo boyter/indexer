@@ -54,7 +54,7 @@ func main() {
 	//})
 
 	rand.Seed(1)
-	for j := 0; j < 40000; j++ {
+	for j := 0; j < 10000; j++ {
 		for i := 0; i < BloomSize; i++ {
 			bloomFilter = append(bloomFilter, rand.Uint32())
 			idToFile = append(idToFile, strconv.Itoa(i))
