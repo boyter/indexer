@@ -47,9 +47,11 @@ func main() {
 		}
 
 		// add the document to the index
-		_ = Add(Itemise(Tokenize(string(res))))
-		// store the association from what's in the index to the filename, we know its 0 to whatever so this works
-		idToFile = append(idToFile, root)
+		for i := 0; i < 5_000; i++ {
+			_ = Add(Itemise(Tokenize(string(res))))
+			// store the association from what's in the index to the filename, we know its 0 to whatever so this works
+			idToFile = append(idToFile, root)
+		}
 		return nil
 	})
 
