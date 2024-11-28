@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
+	"math/rand"
 	"os"
-	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -22,38 +22,44 @@ func main() {
 
 	startTime := time.Now()
 	// walk the directory getting files and indexing
-	_ = filepath.Walk(".", func(root string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
+	//_ = filepath.Walk(".", func(root string, info os.FileInfo, err error) error {
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	if info.IsDir() {
+	//		return nil // we only care about files
+	//	}
+	//
+	//	res, err := os.ReadFile(root)
+	//	if err != nil {
+	//		return nil // swallow error
+	//	}
+	//
+	//	// don't index binary files by looking for nul byte, similar to how grep does it
+	//	if bytes.IndexByte(res, 0) != -1 {
+	//		return nil
+	//	}
+	//
+	//	// only index up to about 5kb
+	//	if len(res) > 5000 {
+	//		res = res[:5000]
+	//	}
+	//
+	//	// add the document to the index
+	//	_ = Add(Itemise(Tokenize(string(res))))
+	//	// store the association from what's in the index to the filename, we know its 0 to whatever so this works
+	//	idToFile = append(idToFile, root)
+	//	return nil
+	//})
 
-		if info.IsDir() {
-			return nil // we only care about files
+	rand.Seed(1)
+	for j := 0; j < 10000; j++ {
+		for i := 0; i < BloomSize; i++ {
+			bloomFilter = append(bloomFilter, rand.Uint64())
+			idToFile = append(idToFile, strconv.Itoa(i))
 		}
-
-		res, err := os.ReadFile(root)
-		if err != nil {
-			return nil // swallow error
-		}
-
-		// don't index binary files by looking for nul byte, similar to how grep does it
-		if bytes.IndexByte(res, 0) != -1 {
-			return nil
-		}
-
-		// only index up to about 5kb
-		if len(res) > 5000 {
-			res = res[:5000]
-		}
-
-		// add the document to the index
-		for i := 0; i < 5_000; i++ {
-			_ = Add(Itemise(Tokenize(string(res))))
-			// store the association from what's in the index to the filename, we know its 0 to whatever so this works
-			idToFile = append(idToFile, root)
-		}
-		return nil
-	})
+	}
 
 	endTime := time.Since(startTime)
 	fmt.Printf("currentBlockDocumentCount:%v currentDocumentCount:%v currentBlockStartDocumentCount:%v indexTimeSeconds:%v trigramMethod:%v\n", currentBlockDocumentCount, currentDocumentCount, currentBlockStartDocumentCount, endTime.Seconds(), trigramMethod)
