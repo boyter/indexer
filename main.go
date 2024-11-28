@@ -20,7 +20,7 @@ func main() {
 	flag.StringVar(&trigramMethod, "trigram", "default", "which trigram method should we use [default,merovius,dancantos,jamesrom,ffmiruz]")
 	flag.Parse()
 
-	startTime := time.Now().UnixMilli()
+	startTime := time.Now()
 	// walk the directory getting files and indexing
 	_ = filepath.Walk(".", func(root string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -53,32 +53,16 @@ func main() {
 		return nil
 	})
 
-	endTime := time.Now().UnixMilli() - startTime
-	fmt.Printf("currentBlockDocumentCount:%v currentDocumentCount:%v currentBlockStartDocumentCount:%v indexTimeMilli:%v trigramMethod:%v\n", currentBlockDocumentCount, currentDocumentCount, currentBlockStartDocumentCount, endTime, trigramMethod)
+	endTime := time.Since(startTime)
+	fmt.Printf("currentBlockDocumentCount:%v currentDocumentCount:%v currentBlockStartDocumentCount:%v indexTimeMilli:%v trigramMethod:%v\n", currentBlockDocumentCount, currentDocumentCount, currentBlockStartDocumentCount, endTime.Seconds(), trigramMethod)
 	if trigramMethod == "" {
 		return
 	}
 
-	var searchTerm string
-	for {
-		fmt.Println("enter search term: ")
-		_, _ = fmt.Scanln(&searchTerm)
-
+	for _, searchTerm := range []string{"test", "import", "struct", "linux", "logitech", "boyterwashere", "linus", "fuck", "shit", "thisshouldmatchnothing"} {
+		startTime = time.Now()
 		res := Search(Queryise(searchTerm))
-		fmt.Println("--------------")
-		fmt.Println(len(res), "index result(s)")
-		fmt.Println("")
-		for _, r := range res {
-			fmt.Println(idToFile[r])
-			matching := findMatchingLines(idToFile[r], searchTerm, 5)
-			for _, l := range matching {
-				fmt.Println(l)
-			}
-			if len(matching) == 0 {
-				fmt.Println("false positive match")
-			}
-			fmt.Println("")
-		}
+		fmt.Println(fmt.Sprintf("len(%v) ms(%v)", len(res), time.Since(startTime).Milliseconds()))
 	}
 }
 
