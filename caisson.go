@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"unicode/utf8"
+	"unsafe"
 )
 
 var currentBlockDocumentCount = 0
@@ -62,7 +63,7 @@ func Search(queryBits []uint64) []uint32 {
 }
 
 // Tokenize returns a slice of tokens for the given text.
-func Tokenize(text string) []string {
+func Tokenize(text string) []Trigram {
 	res := strings.Fields(strings.ToLower(text))
 	var cres []string
 	for _, v := range res {
@@ -72,23 +73,28 @@ func Tokenize(text string) []string {
 	}
 
 	// now we have clean tokens trigram them
-	var trigrams []string
+	var trigrams []Trigram
 	for _, r := range cres {
 		switch trigramMethod {
 		case "merovius":
-			trigrams = append(trigrams, TrigramsMerovius(r)...)
-		case "dancantos":
-			trigrams = append(trigrams, TrigramsDancantos(r)...)
-		case "ffmiruz":
-			trigrams = append(trigrams, TrigramsFfmiruz(r)...)
-		case "jamesrom":
-			for _, t := range TrigramsJamesrom(r) {
-				trigrams = append(trigrams, string(t.Bytes()))
+			for _, t := range TrigramsMerovius(r) {
+				trigrams = append(trigrams, Trigram([]rune(t)[:3]))
 			}
+		case "dancantos":
+			for _, t := range TrigramsDancantos(r) {
+				trigrams = append(trigrams, Trigram([]rune(t)[:3]))
+			}
+		case "ffmiruz":
+			for _, t := range TrigramsFfmiruz(r) {
+				trigrams = append(trigrams, Trigram([]rune(t)[:3]))
+			}
+		case "jamesrom":
+			trigrams = append(trigrams, TrigramsJamesrom(r)...)
 		default:
-			trigrams = append(trigrams, Trigrams(r)...)
+			for _, t := range TrigramsFfmiruz(r) {
+				trigrams = append(trigrams, Trigram([]rune(t)[:3]))
+			}
 		}
-
 	}
 
 	return trigrams
@@ -97,11 +103,11 @@ func Tokenize(text string) []string {
 // Itemise given some content will turn it into tokens
 // and then use those to create the bit positions we need to
 // set for our bloomFilter filter index
-func Itemise(tokens []string) []bool {
+func Itemise(tokens []Trigram) []bool {
 	docBool := make([]bool, BloomSize)
 
 	for _, token := range tokens {
-		for _, i := range HashBloom([]byte(token)) {
+		for _, i := range HashBloom(token.BytesFast()) {
 			docBool[i] = true
 		}
 	}
@@ -195,11 +201,19 @@ func trigramsDancantos(text string, result []string, location int) int {
 
 type Trigram [3]rune
 
-// Bytes is the simplest way to turn an array of runes into a slice of bytes.
+// Bytes is the simplest way to turn an array of runes into a slice of bytes
+// that represent a UTF-8 string.
 // There is a faster way to do this, but not needed for this demo.
 // See: https://stackoverflow.com/questions/29255746/how-encode-rune-into-byte-using-utf8
 func (t Trigram) Bytes() []byte {
 	return []byte(string(t[:]))
+}
+
+// BytesFast returns the underlying bytes of the 3 runes. These bytes are
+// suitable for hashing but the slice does not represent a UTF-8 string.
+// Use .Bytes() if you want to encode the Trigram to a UTF-8 string.
+func (t Trigram) BytesFast() []byte {
+	return (*[12]byte)(unsafe.Pointer(&t))[:]
 }
 
 // Trigrams takes in text and returns its trigrams.
@@ -262,7 +276,7 @@ func runeSize(b byte) int {
 func Queryise(query string) []uint64 {
 	var queryBits []uint64
 	for _, w := range Tokenize(query) {
-		queryBits = append(queryBits, HashBloom([]byte(w))...)
+		queryBits = append(queryBits, HashBloom(w.BytesFast())...)
 	}
 
 	// removing duplicates and sorting should in theory improve RAM access
